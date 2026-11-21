@@ -1,0 +1,12 @@
+=== Cloud IAM & CSPM Misconfiguration Audit (CIS AWS Foundations / Prowler) ===
+Vulnerable Terraform : 6/6 FAILED (2 CRITICAL, 4 HIGH)
+Hardened Terraform   : 0/6 FAILED (6/6 PASSED - 100% compliant)
+
+CIS ID         Severity  Before  After   Prowler Check ID                                 Finding
+----------------------------------------------------------------------------------------------------------------------------------
+CIS-AWS-1.16   CRITICAL  FAIL    PASS    iam_no_full_administrative_privileges            IAM policy grants wildcard administrative pri
+CIS-AWS-2.1.5  CRITICAL  FAIL    PASS    s3_bucket_public_access                          S3 bucket allows public access (acl=public-re
+CIS-AWS-2.1.1  HIGH      FAIL    PASS    s3_bucket_default_encryption                     S3 bucket lacks AWS KMS Server-Side Encryptio
+CIS-AWS-2.2.1  HIGH      FAIL    PASS    ec2_ebs_volume_encryption                        EBS volume is unencrypted at rest (encrypted 
+CIS-AWS-5.2    HIGH      FAIL    PASS    ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22_3389 Security Group exposes SSH (22) or RDP (3389)
+CIS-AWS-3.1    HIGH      FAIL    PASS    cloudtrail_multi_region_enabled_and_log_validation CloudTrail is not multi-region or lacks log f

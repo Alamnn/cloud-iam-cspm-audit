@@ -1,0 +1,117 @@
+<style>body{background:#1e1e1e;margin:0;padding:24px}.w{background:#0d1117;color:#c9d1d9;font:13px/1.45 Menlo,monospace;padding:20px;border-radius:8px;width:1240px;white-space:pre-wrap}.h{color:#58a6ff}.a{color:#3fb950}.d{color:#f85149}</style><div class=w><span class=h>$ diff -u terraform/vulnerable/main.tf terraform/hardened/main.tf</span>
+<span class=>--- terraform/vulnerable/main.tf	2026-11-21 17:30:01</span>
+<span class=>+++ terraform/hardened/main.tf	2026-11-21 17:30:03</span>
+<span class=>@@ -12,7 +12,7 @@</span>
+<span class=>   region = &quot;us-east-1&quot;</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=d>-# FINDING 1 (CRITICAL): Over-privileged IAM Policy with wildcard Action:* and Resource:*</span>
+<span class=a>+# REMEDIATION 1: Least-Privilege IAM Policy scoped to specific S3 prefix &amp; KMS key</span>
+<span class=> resource &quot;aws_iam_role_policy&quot; &quot;app_role_policy&quot; {</span>
+<span class=>   name = &quot;app-automation-policy&quot;</span>
+<span class=>   role = &quot;app-automation-role&quot;</span>
+<span class=>@@ -21,60 +21,78 @@</span>
+<span class=>     Version = &quot;2012-10-17&quot;</span>
+<span class=>     Statement = [</span>
+<span class=>       {</span>
+<span class=d>-        Sid      = &quot;FullAdminWildcard&quot;</span>
+<span class=d>-        Effect   = &quot;Allow&quot;</span>
+<span class=d>-        Action   = &quot;*&quot;</span>
+<span class=d>-        Resource = &quot;*&quot;</span>
+<span class=a>+        Sid    = &quot;LeastPrivilegeS3ExportReadWrite&quot;</span>
+<span class=a>+        Effect = &quot;Allow&quot;</span>
+<span class=a>+        Action = [</span>
+<span class=a>+          &quot;s3:GetObject&quot;,</span>
+<span class=a>+          &quot;s3:PutObject&quot;,</span>
+<span class=a>+          &quot;s3:ListBucket&quot;</span>
+<span class=a>+        ]</span>
+<span class=a>+        Resource = [</span>
+<span class=a>+          &quot;arn:aws:s3:::acme-customer-pii-exports-prod&quot;,</span>
+<span class=a>+          &quot;arn:aws:s3:::acme-customer-pii-exports-prod/exports/*&quot;</span>
+<span class=a>+        ]</span>
+<span class=a>+        Condition = {</span>
+<span class=a>+          Bool = {</span>
+<span class=a>+            &quot;aws:SecureTransport&quot; = &quot;true&quot;</span>
+<span class=a>+          }</span>
+<span class=a>+        }</span>
+<span class=>       }</span>
+<span class=>     ]</span>
+<span class=>   })</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=d>-# FINDING 2 (CRITICAL): Publicly readable S3 bucket without PublicAccessBlock or SSE</span>
+<span class=a>+# REMEDIATION 2: Private S3 bucket + full PublicAccessBlock + KMS Server-Side Encryption + Versioning</span>
+<span class=> resource &quot;aws_s3_bucket&quot; &quot;customer_exports&quot; {</span>
+<span class=>   bucket = &quot;acme-customer-pii-exports-prod&quot;</span>
+<span class=d>-  acl    = &quot;public-read&quot;</span>
+<span class=a>+  acl    = &quot;private&quot;</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=> resource &quot;aws_s3_bucket_public_access_block&quot; &quot;customer_exports_pab&quot; {</span>
+<span class=>   bucket                  = aws_s3_bucket.customer_exports.id</span>
+<span class=d>-  block_public_acls       = false</span>
+<span class=d>-  block_public_policy     = false</span>
+<span class=d>-  ignore_public_acls      = false</span>
+<span class=d>-  restrict_public_buckets = false</span>
+<span class=a>+  block_public_acls       = true</span>
+<span class=a>+  block_public_policy     = true</span>
+<span class=a>+  ignore_public_acls      = true</span>
+<span class=a>+  restrict_public_buckets = true</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=d>-# FINDING 3 (HIGH): Unencrypted EBS volume storing database snapshots</span>
+<span class=a>+resource &quot;aws_s3_bucket_server_side_encryption_configuration&quot; &quot;customer_exports_sse&quot; {</span>
+<span class=a>+  bucket = aws_s3_bucket.customer_exports.id</span>
+<span class=a>+  rule {</span>
+<span class=a>+    apply_server_side_encryption_by_default {</span>
+<span class=a>+      sse_algorithm     = &quot;aws:kms&quot;</span>
+<span class=a>+      kms_master_key_id = &quot;arn:aws:kms:us-east-1:123456789012:key/prod-s3-kms-key&quot;</span>
+<span class=a>+    }</span>
+<span class=a>+    bucket_key_enabled = true</span>
+<span class=a>+  }</span>
+<span class=a>+}</span>
+<span class=a>+</span>
+<span class=a>+# REMEDIATION 3: Encrypted EBS volume with customer-managed KMS key</span>
+<span class=> resource &quot;aws_ebs_volume&quot; &quot;db_data&quot; {</span>
+<span class=>   availability_zone = &quot;us-east-1a&quot;</span>
+<span class=>   size              = 100</span>
+<span class=d>-  encrypted         = false</span>
+<span class=a>+  encrypted         = true</span>
+<span class=a>+  kms_key_id        = &quot;arn:aws:kms:us-east-1:123456789012:key/prod-ebs-kms-key&quot;</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=d>-# FINDING 4 (HIGH): Security Group exposing SSH (22) and RDP (3389) to 0.0.0.0/0</span>
+<span class=a>+# REMEDIATION 4: Restricted Security Group (Bastion VPN CIDR only, RDP removed)</span>
+<span class=> resource &quot;aws_security_group&quot; &quot;mgmt_sg&quot; {</span>
+<span class=>   name        = &quot;prod-mgmt-sg&quot;</span>
+<span class=d>-  description = &quot;Management access&quot;</span>
+<span class=a>+  description = &quot;Management access via corporate VPN bastion only&quot;</span>
+<span class=> </span>
+<span class=>   ingress {</span>
+<span class=>     from_port   = 22</span>
+<span class=>     to_port     = 22</span>
+<span class=>     protocol    = &quot;tcp&quot;</span>
+<span class=d>-    cidr_blocks = [&quot;0.0.0.0/0&quot;]</span>
+<span class=a>+    cidr_blocks = [&quot;10.24.0.0/24&quot;]</span>
+<span class=>   }</span>
+<span class=d>-</span>
+<span class=d>-  ingress {</span>
+<span class=d>-    from_port   = 3389</span>
+<span class=d>-    to_port     = 3389</span>
+<span class=d>-    protocol    = &quot;tcp&quot;</span>
+<span class=d>-    cidr_blocks = [&quot;0.0.0.0/0&quot;]</span>
+<span class=d>-  }</span>
+<span class=> }</span>
+<span class=> </span>
+<span class=d>-# FINDING 5 (HIGH): Multi-Region CloudTrail disabled / log file validation off</span>
+<span class=a>+# REMEDIATION 5: Multi-Region CloudTrail enabled with KMS encryption and log digest validation</span>
+<span class=> resource &quot;aws_cloudtrail&quot; &quot;audit_trail&quot; {</span>
+<span class=>   name                          = &quot;acme-org-trail&quot;</span>
+<span class=>   s3_bucket_name                = aws_s3_bucket.customer_exports.id</span>
+<span class=d>-  is_multi_region_trail         = false</span>
+<span class=d>-  enable_log_file_validation    = false</span>
+<span class=a>+  is_multi_region_trail         = true</span>
+<span class=a>+  enable_log_file_validation    = true</span>
+<span class=a>+  kms_key_id                    = &quot;arn:aws:kms:us-east-1:123456789012:key/prod-cloudtrail-kms-key&quot;</span>
+<span class=> }</span>
+</div>

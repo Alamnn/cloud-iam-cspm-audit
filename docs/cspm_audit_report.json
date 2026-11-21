@@ -1,0 +1,121 @@
+{
+  "summary": {
+    "total_checks": 6,
+    "vulnerable_failed": 6,
+    "vulnerable_passed": 0,
+    "hardened_failed": 0,
+    "hardened_passed": 6
+  },
+  "vulnerable_results": [
+    {
+      "id": "CIS-AWS-1.16",
+      "prowler_check": "iam_no_full_administrative_privileges",
+      "severity": "CRITICAL",
+      "status": "FAIL",
+      "title": "IAM policy grants wildcard administrative privileges (Action:* / Resource:*)",
+      "blast_radius": "Full account compromise: any compromised workload assuming app-automation-role can create admin users, exfiltrate all S3 buckets, or terminate production infrastructure.",
+      "remediation": "Scope IAM Action list to s3:GetObject, s3:PutObject, s3:ListBucket on the specific S3 bucket ARN and enforce aws:SecureTransport."
+    },
+    {
+      "id": "CIS-AWS-2.1.5",
+      "prowler_check": "s3_bucket_public_access",
+      "severity": "CRITICAL",
+      "status": "FAIL",
+      "title": "S3 bucket allows public access (acl=public-read or PublicAccessBlock disabled)",
+      "blast_radius": "Unauthenticated internet users can list and download customer PII exports from acme-customer-pii-exports-prod.",
+      "remediation": "Set acl = private and enable all four aws_s3_bucket_public_access_block flags (block_public_acls, block_public_policy, ignore_public_acls, restrict_public_buckets)."
+    },
+    {
+      "id": "CIS-AWS-2.1.1",
+      "prowler_check": "s3_bucket_default_encryption",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "title": "S3 bucket lacks AWS KMS Server-Side Encryption configuration",
+      "blast_radius": "Data at rest in S3 is not protected by customer-managed KMS keys and lacks key-level audit trails.",
+      "remediation": "Add aws_s3_bucket_server_side_encryption_configuration with sse_algorithm = aws:kms."
+    },
+    {
+      "id": "CIS-AWS-2.2.1",
+      "prowler_check": "ec2_ebs_volume_encryption",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "title": "EBS volume is unencrypted at rest (encrypted = false)",
+      "blast_radius": "Database volume snapshots or physical media exposure reveal plaintext customer records.",
+      "remediation": "Set encrypted = true and attach a customer-managed kms_key_id on aws_ebs_volume."
+    },
+    {
+      "id": "CIS-AWS-5.2",
+      "prowler_check": "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22_3389",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "title": "Security Group exposes SSH (22) or RDP (3389) to 0.0.0.0/0",
+      "blast_radius": "Direct internet exposure enables automated credential stuffing, SSH/RDP brute force, and remote code execution attempts against management ports.",
+      "remediation": "Remove 0.0.0.0/0 ingress on ports 22/3389; restrict SSH to corporate VPN bastion CIDR (10.24.0.0/24)."
+    },
+    {
+      "id": "CIS-AWS-3.1",
+      "prowler_check": "cloudtrail_multi_region_enabled_and_log_validation",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "title": "CloudTrail is not multi-region or lacks log file integrity validation",
+      "blast_radius": "Attackers operating in non-default AWS regions evade audit logging, or can tamper with delivered CloudTrail log files undetected.",
+      "remediation": "Set is_multi_region_trail = true, enable_log_file_validation = true, and configure kms_key_id."
+    }
+  ],
+  "hardened_results": [
+    {
+      "id": "CIS-AWS-1.16",
+      "prowler_check": "iam_no_full_administrative_privileges",
+      "severity": "CRITICAL",
+      "status": "PASS",
+      "title": "IAM policy grants wildcard administrative privileges (Action:* / Resource:*)",
+      "blast_radius": "Full account compromise: any compromised workload assuming app-automation-role can create admin users, exfiltrate all S3 buckets, or terminate production infrastructure.",
+      "remediation": "Scope IAM Action list to s3:GetObject, s3:PutObject, s3:ListBucket on the specific S3 bucket ARN and enforce aws:SecureTransport."
+    },
+    {
+      "id": "CIS-AWS-2.1.5",
+      "prowler_check": "s3_bucket_public_access",
+      "severity": "CRITICAL",
+      "status": "PASS",
+      "title": "S3 bucket allows public access (acl=public-read or PublicAccessBlock disabled)",
+      "blast_radius": "Unauthenticated internet users can list and download customer PII exports from acme-customer-pii-exports-prod.",
+      "remediation": "Set acl = private and enable all four aws_s3_bucket_public_access_block flags (block_public_acls, block_public_policy, ignore_public_acls, restrict_public_buckets)."
+    },
+    {
+      "id": "CIS-AWS-2.1.1",
+      "prowler_check": "s3_bucket_default_encryption",
+      "severity": "HIGH",
+      "status": "PASS",
+      "title": "S3 bucket lacks AWS KMS Server-Side Encryption configuration",
+      "blast_radius": "Data at rest in S3 is not protected by customer-managed KMS keys and lacks key-level audit trails.",
+      "remediation": "Add aws_s3_bucket_server_side_encryption_configuration with sse_algorithm = aws:kms."
+    },
+    {
+      "id": "CIS-AWS-2.2.1",
+      "prowler_check": "ec2_ebs_volume_encryption",
+      "severity": "HIGH",
+      "status": "PASS",
+      "title": "EBS volume is unencrypted at rest (encrypted = false)",
+      "blast_radius": "Database volume snapshots or physical media exposure reveal plaintext customer records.",
+      "remediation": "Set encrypted = true and attach a customer-managed kms_key_id on aws_ebs_volume."
+    },
+    {
+      "id": "CIS-AWS-5.2",
+      "prowler_check": "ec2_securitygroup_allow_ingress_from_internet_to_tcp_port_22_3389",
+      "severity": "HIGH",
+      "status": "PASS",
+      "title": "Security Group exposes SSH (22) or RDP (3389) to 0.0.0.0/0",
+      "blast_radius": "Direct internet exposure enables automated credential stuffing, SSH/RDP brute force, and remote code execution attempts against management ports.",
+      "remediation": "Remove 0.0.0.0/0 ingress on ports 22/3389; restrict SSH to corporate VPN bastion CIDR (10.24.0.0/24)."
+    },
+    {
+      "id": "CIS-AWS-3.1",
+      "prowler_check": "cloudtrail_multi_region_enabled_and_log_validation",
+      "severity": "HIGH",
+      "status": "PASS",
+      "title": "CloudTrail is not multi-region or lacks log file integrity validation",
+      "blast_radius": "Attackers operating in non-default AWS regions evade audit logging, or can tamper with delivered CloudTrail log files undetected.",
+      "remediation": "Set is_multi_region_trail = true, enable_log_file_validation = true, and configure kms_key_id."
+    }
+  ]
+}
